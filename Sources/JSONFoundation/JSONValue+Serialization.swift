@@ -9,6 +9,7 @@ import Foundation
 
 public typealias JSONStringifyOptions = JSONSerialization.WritingOptions
 public typealias JSONParseOptions = JSONSerialization.ReadingOptions
+
 public enum JSONError: Error {
     case wrongType(Any?)
     case stringifyFailure(Data)
@@ -32,7 +33,7 @@ extension JSONValue {
             self = .number(number)
             
         case let bool as Bool:
-            self = .bool(bool)
+            self = bool ? .true : .false
             
         case nil, is NSNull:
             self = .null
@@ -47,8 +48,11 @@ extension JSONValue {
         case .array(let array):
             return array.map { $0.extracted() }
             
-        case .bool(let bool):
-            return bool
+        case .true:
+            return true
+            
+        case .false:
+            return false
             
         case .null:
             return nil
