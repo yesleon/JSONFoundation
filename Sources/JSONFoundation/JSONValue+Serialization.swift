@@ -11,39 +11,103 @@ public typealias JSONStringifyOptions = JSONSerialization.WritingOptions
 public typealias JSONParseOptions = JSONSerialization.ReadingOptions
 
 public enum JSONError: Error {
-    case wrongType(Any?)
+    case wrongType(Any)
     case stringifyFailure(Data)
     case stringDecodeFailure(String)
+    case castFailure(Any)
+}
+
+public protocol JSONCompatible {
+    func eraseToJSONValue() throws -> JSONValue
+}
+
+extension Dictionary: JSONCompatible where Key == String, Value == Any {
+    
+    public func eraseToJSONValue() throws -> JSONValue {
+        let object = try self.mapValues { value -> JSONValue in
+            guard let jsonCompatible = value as? JSONCompatible else {
+                throw JSONError.castFailure(value)
+            }
+            return try jsonCompatible.eraseToJSONValue()
+        }
+        return .object(object)
+    }
+    
+}
+
+extension Array: JSONCompatible where Element == Any {
+    
+    public func eraseToJSONValue() throws -> JSONValue {
+        let array = try self.map { element -> JSONValue in
+            guard let jsonCompatible = element as? JSONCompatible else {
+                throw JSONError.castFailure(element)
+            }
+            return try jsonCompatible.eraseToJSONValue()
+        }
+        return .array(array)
+    }
+}
+
+extension String: JSONCompatible {
+    
+    public func eraseToJSONValue() throws -> JSONValue {
+        return .string(self)
+    }
+}
+
+extension Int: JSONCompatible {
+    
+    public func eraseToJSONValue() throws -> JSONValue {
+        return .number(.integer(self))
+    }
+}
+
+extension Double: JSONCompatible {
+    
+    public func eraseToJSONValue() throws -> JSONValue {
+        return .number(.float(self))
+    }
+}
+
+extension Bool: JSONCompatible {
+    
+    public func eraseToJSONValue() throws -> JSONValue {
+        return self ? .true : .false
+    }
+}
+
+extension Optional: JSONCompatible where Wrapped == Any {
+    
+    public func eraseToJSONValue() throws -> JSONValue {
+        if let wrapped = self {
+            if let wrapped = wrapped as? JSONCompatible {
+                return try wrapped.eraseToJSONValue()
+            } else {
+                throw JSONError.castFailure(wrapped)
+            }
+        } else {
+            return .null
+        }
+    }
+}
+
+extension NSNull: JSONCompatible {
+    
+    public func eraseToJSONValue() throws -> JSONValue {
+        return .null
+    }
+}
+
+extension JSONValue: JSONCompatible {
+    
+    public func eraseToJSONValue() throws -> JSONValue {
+        return self
+    }
 }
 
 extension JSONValue {
     
-    private init(value: Any) throws {
-        switch value {
-        case let object as [JSONString: Any]:
-            self = .object(try object.mapValues(Self.init(value:)))
-            
-        case let array as [Any]:
-            self = .array(try array.map(Self.init(value:)))
-            
-        case let string as JSONString:
-            self = .string(string)
-            
-        case let number as JSONNumber:
-            self = .number(number)
-            
-        case let bool as Bool:
-            self = bool ? .true : .false
-            
-        case nil, is NSNull:
-            self = .null
-            
-        default:
-            throw JSONError.wrongType(type(of: value))
-        }
-    }
-    
-    private func extracted() -> Any? {
+    private func extracted() -> Any {
         switch self {
         case .array(let array):
             return array.map { $0.extracted() }
@@ -55,7 +119,7 @@ extension JSONValue {
             return false
             
         case .null:
-            return nil
+            return Optional<Any>.none as Any
             
         case .number(let number):
             return number
@@ -77,11 +141,14 @@ extension JSONValue {
     
     public static func parse(_ data: Data, options: JSONParseOptions) throws -> JSONValue {
         let value = try JSONSerialization.jsonObject(with: data, options: options)
-        return try self.init(value: value)
+        guard let jsonCompatible = value as? JSONCompatible else {
+            throw JSONError.wrongType(value)
+        }
+        return try jsonCompatible.eraseToJSONValue()
     }
     
     public func serialized(options: JSONStringifyOptions) throws -> Data {
-        return try JSONSerialization.data(withJSONObject: extracted() as Any, options: options)
+        return try JSONSerialization.data(withJSONObject: extracted(), options: options)
     }
     
     public func stringified(options: JSONStringifyOptions) throws -> JSONString {

@@ -7,14 +7,10 @@ final class JSONFoundationTests: XCTestCase {
         // Use XCTAssert and related functions to verify your tests produce the correct
         // results.
 //        XCTAssertEqual(JSONFoundation().text, "Hello, World!")
+        let a = ["asdfasdf", 321] as [Any]
         
-        var value: JSONValue = .null
-        value = ["asdf": 123]
-        value = nil
-        
-        let string = try value.stringified(options: [.fragmentsAllowed, .prettyPrinted, .withoutEscapingSlashes])
-        let b = try JSONValue.parse(string, options: .fragmentsAllowed)
-        print(string)
+//        let b = try a.eraseToJSONValue()
+        print(try true.eraseToJSONValue())
     }
 
     static var allTests = [

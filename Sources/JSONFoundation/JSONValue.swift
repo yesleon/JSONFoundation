@@ -5,14 +5,50 @@
 //
 //  Created by Li-Heng Hsu on 2021/3/7.
 //
-import Foundation.NSDecimal
 
-public typealias JSONNumber = Decimal
+// MARK: - Primitive Types
+
+public enum JSONNumber {
+    case integer(Int)
+    case float(Double)
+}
+
+extension JSONNumber: ExpressibleByIntegerLiteral {
+    
+    public init(integerLiteral value: IntegerLiteralType) {
+        self = .integer(value)
+    }
+}
+
+extension JSONNumber: ExpressibleByFloatLiteral {
+    
+    public init(floatLiteral value: FloatLiteralType) {
+        self = .float(value)
+    }
+}
+
+extension JSONNumber: CustomStringConvertible {
+    
+    public var description: String {
+        switch self {
+        case .float(let float):
+            return float.description
+            
+        case .integer(let integer):
+            return integer.description
+        }
+    }
+}
+
 public typealias JSONString = String
+
+// MARK: - Collection Types
+
 public typealias JSONArray = [JSONValue]
+
 public typealias JSONObject = [JSONString: JSONValue]
 
-
+// MARK: - Type Erasure
 
 public enum JSONValue {
     case number(JSONNumber)
@@ -26,9 +62,12 @@ public enum JSONValue {
 
 extension JSONValue: ExpressibleByArrayLiteral {
     
-    public init(arrayLiteral elements: JSONValue...) {
+    public typealias ArrayLiteralElement = JSONValue
+    
+    public init(arrayLiteral elements: ArrayLiteralElement...) {
         self = .array(elements)
     }
+    
 }
 
 extension JSONValue: ExpressibleByNilLiteral {
@@ -40,38 +79,88 @@ extension JSONValue: ExpressibleByNilLiteral {
 
 extension JSONValue: ExpressibleByFloatLiteral {
     
-    public init(floatLiteral value: Double) {
-        self = .number(JSONNumber(value))
+    public init(floatLiteral value: FloatLiteralType) {
+        self = .number(.init(floatLiteral: value))
     }
 }
 
 extension JSONValue: ExpressibleByIntegerLiteral {
     
-    public init(integerLiteral value: Int) {
-        self = .number(JSONNumber(value))
+    public init(integerLiteral value: IntegerLiteralType) {
+        self = .number(.init(integerLiteral: value))
     }
 }
 
 extension JSONValue: ExpressibleByDictionaryLiteral {
     
-    public init(dictionaryLiteral elements: (JSONString, JSONValue)...) {
+    public typealias Key = JSONString
+    
+    public typealias Value = JSONValue
+    
+    public init(dictionaryLiteral elements: (Key, Value)...) {
         let object = JSONObject(uniqueKeysWithValues: elements)
         self = .object(object)
     }
 }
 
-extension JSONValue: ExpressibleByStringLiteral {
+extension JSONValue: ExpressibleByStringInterpolation {
     
-    public init(stringLiteral value: JSONString) {
+    public typealias StringLiteralType = JSONString
+    
+    public init(stringLiteral value: StringLiteralType) {
         self = .string(value)
     }
 }
 
-extension JSONValue: ExpressibleByStringInterpolation { }
-
 extension JSONValue: ExpressibleByBooleanLiteral {
     
-    public init(booleanLiteral value: Bool) {
+    public typealias BooleanLiteralType = Bool
+    
+    public init(booleanLiteral value: BooleanLiteralType) {
         self = value ? .true : .false
     }
+}
+
+extension JSONValue: CustomStringConvertible {
+    
+    public var description: String {
+        switch self {
+        case .array(let array):
+            let count = array.count
+            if count == 0 {
+                return "Array (empty)"
+            } else if count == 1 {
+                return "Array (1 element)"
+            } else {
+                return "Array (\(count) elements)"
+            }
+            
+        case .false:
+            return "false"
+            
+        case .null:
+            return "null"
+            
+        case .number(let number):
+            return number.description
+            
+        case .object(let object):
+            let count = object.count
+            if count == 0 {
+                return "Object (empty)"
+            } else if count == 1 {
+                return "Object (1 member)"
+            } else {
+                return "Object (\(count) members)"
+            }
+            
+            
+        case .string(let string):
+            return "\"\(string)\""
+            
+        case .true:
+            return "true"
+        }
+    }
+    
 }
