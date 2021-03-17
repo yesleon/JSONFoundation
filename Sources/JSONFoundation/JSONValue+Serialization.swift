@@ -98,6 +98,41 @@ extension NSNull: JSONCompatible {
     }
 }
 
+extension NSDictionary: JSONCompatible {
+    public func eraseToJSONValue() throws -> JSONValue {
+        guard let dict = self as? [String: Any] else {
+            throw JSONError.castFailure(self)
+        }
+        return try dict.eraseToJSONValue()
+    }
+}
+
+extension NSArray: JSONCompatible {
+    public func eraseToJSONValue() throws -> JSONValue {
+        guard let array = self as? [Any] else {
+            throw JSONError.castFailure(self)
+        }
+        return try array.eraseToJSONValue()
+    }
+}
+
+extension NSNumber: JSONCompatible {
+    public func eraseToJSONValue() throws -> JSONValue {
+        if CFNumberIsFloatType(self as CFNumber) {
+            return try doubleValue.eraseToJSONValue()
+        } else {
+            return try intValue.eraseToJSONValue()
+        }
+    }
+}
+
+extension NSString: JSONCompatible {
+    public func eraseToJSONValue() throws -> JSONValue {
+        return try (self as String).eraseToJSONValue()
+    }
+}
+
+
 extension JSONValue: JSONCompatible {
     
     public func eraseToJSONValue() throws -> JSONValue {
