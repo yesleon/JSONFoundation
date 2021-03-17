@@ -13,6 +13,8 @@ public enum JSONNumber {
     case float(Double)
 }
 
+extension JSONNumber: Hashable { }
+
 extension JSONNumber: ExpressibleByIntegerLiteral {
     
     public init(integerLiteral value: IntegerLiteralType) {
@@ -59,6 +61,8 @@ public enum JSONValue {
     case `false`
     case null
 }
+
+extension JSONValue: Hashable { }
 
 extension JSONValue: ExpressibleByArrayLiteral {
     
