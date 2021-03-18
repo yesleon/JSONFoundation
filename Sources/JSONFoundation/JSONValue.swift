@@ -15,33 +15,6 @@ public enum JSONNumber {
 
 extension JSONNumber: Hashable { }
 
-extension JSONNumber: ExpressibleByIntegerLiteral {
-    
-    public init(integerLiteral value: IntegerLiteralType) {
-        self = .integer(value)
-    }
-}
-
-extension JSONNumber: ExpressibleByFloatLiteral {
-    
-    public init(floatLiteral value: FloatLiteralType) {
-        self = .float(value)
-    }
-}
-
-extension JSONNumber: CustomStringConvertible {
-    
-    public var description: String {
-        switch self {
-        case .float(let float):
-            return float.description
-            
-        case .integer(let integer):
-            return integer.description
-        }
-    }
-}
-
 public typealias JSONString = String
 
 // MARK: - Collection Types
@@ -84,14 +57,14 @@ extension JSONValue: ExpressibleByNilLiteral {
 extension JSONValue: ExpressibleByFloatLiteral {
     
     public init(floatLiteral value: FloatLiteralType) {
-        self = .number(.init(floatLiteral: value))
+        self = .number(.float(value))
     }
 }
 
 extension JSONValue: ExpressibleByIntegerLiteral {
     
     public init(integerLiteral value: IntegerLiteralType) {
-        self = .number(.init(integerLiteral: value))
+        self = .number(.integer(value))
     }
 }
 
@@ -125,45 +98,21 @@ extension JSONValue: ExpressibleByBooleanLiteral {
     }
 }
 
-extension JSONValue: CustomStringConvertible {
+extension JSONValue: LosslessStringConvertible {
     
     public var description: String {
-        switch self {
-        case .array(let array):
-            let count = array.count
-            if count == 0 {
-                return "Array (empty)"
-            } else if count == 1 {
-                return "Array (1 element)"
-            } else {
-                return "Array (\(count) elements)"
-            }
-            
-        case .false:
-            return "false"
-            
-        case .null:
-            return "null"
-            
-        case .number(let number):
-            return number.description
-            
-        case .object(let object):
-            let count = object.count
-            if count == 0 {
-                return "Object (empty)"
-            } else if count == 1 {
-                return "Object (1 member)"
-            } else {
-                return "Object (\(count) members)"
-            }
-            
-            
-        case .string(let string):
-            return "\"\(string)\""
-            
-        case .true:
-            return "true"
+        do {
+            return try self.stringified(options: [.fragmentsAllowed, .prettyPrinted])
+        } catch {
+            return String(describing: error)
+        }
+    }
+    
+    public init?(_ description: String) {
+        do {
+            self = try Self.parse(description, options: .fragmentsAllowed)
+        } catch {
+            return nil
         }
     }
     
