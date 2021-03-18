@@ -147,6 +147,20 @@ extension JSONValue {
         case .array(let array):
             return array.map { $0.extracted() }
             
+        case .object(let object):
+            return object.mapValues { $0.extracted() }
+            
+        case .number(let number):
+            switch number {
+            case .float(let float):
+                return float
+            case .integer(let integer):
+                return integer
+            }
+            
+        case .string(let string):
+            return string
+            
         case .true:
             return true
             
@@ -155,15 +169,6 @@ extension JSONValue {
             
         case .null:
             return Optional<Any>.none as Any
-            
-        case .number(let number):
-            return number
-            
-        case .object(let object):
-            return object.mapValues { $0.extracted() }
-            
-        case .string(let string):
-            return string
         }
     }
     
