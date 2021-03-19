@@ -100,9 +100,11 @@ extension JSONValue: ExpressibleByBooleanLiteral {
 
 extension JSONValue: LosslessStringConvertible {
     
+    static var defaultStringifyOptions: JSONStringifyOptions = [.fragmentsAllowed, .prettyPrinted]
+    
     public var description: String {
         do {
-            return try self.stringified(options: [.fragmentsAllowed, .prettyPrinted])
+            return try self.stringified(options: Self.defaultStringifyOptions)
         } catch {
             return String(describing: error)
         }
